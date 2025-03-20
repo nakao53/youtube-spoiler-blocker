@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      width: 300px;
+      padding: 10px;
+      font-family: Arial, sans-serif;
+    }
+    .container {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .switch {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    #keywordInput {
+      width: 100%;
+      padding: 5px;
+      margin-bottom: 5px;
+    }
+    #keywordList {
+      margin-top: 10px;
+    }
+    .keyword-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px;
+      background-color: #f0f0f0;
+      margin-bottom: 5px;
+      border-radius: 3px;
+    }
+    .remove-btn {
+      color: red;
+      cursor: pointer;
+    }
+    .filter-options {
+      border: 1px solid #ddd;
+      padding: 10px;
+      border-radius: 5px;
+      margin-top: 10px;
+    }
+    .blur-control {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 5px;
+    }
+    #blurAmount {
+      width: 100px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="switch">
+      <label>
+        <input type="checkbox" id="enableFilter" checked>
+        フィルター有効化
+      </label>
+    </div>
+
+    <div class="filter-options">
+      <div class="switch">
+        <label>
+          <input type="checkbox" id="enableBlur" checked>
+          サムネイルをぼかす
+        </label>
+      </div>
+      <div class="blur-control">
+        <label for="blurAmount">ぼかしの強さ:</label>
+        <input type="range" id="blurAmount" min="2" max="20" value="10">
+        <span id="blurValue">10px</span>
+      </div>
+    </div>
+
+    <div>
+      <input type="text" id="keywordInput" placeholder="キーワードを入力...">
+      <button id="addKeyword">追加</button>
+    </div>
+
+    <div id="keywordList">
+      <!-- キーワードリストがここに動的に追加されます -->
+    </div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景の円 -->
+  <circle cx="64" cy="64" r="60" fill="#FF0000"/>
+  
+  <!-- YouTube再生ボタン（白） -->
+  <path d="M 50 40 L 50 88 L 90 64 Z" fill="white"/>
+  
+  <!-- ぼかしを表現する波線 -->
+  <g stroke="white" stroke-width="4" fill="none" opacity="0.6">
+    <path d="M 20 64 Q 35 54, 50 64 T 80 64 T 110 64"/>
+    <path d="M 20 76 Q 35 66, 50 76 T 80 76 T 110 76"/>
+    <path d="M 20 52 Q 35 42, 50 52 T 80 52 T 110 52"/>
+  </g>
+</svg>
