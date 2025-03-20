@@ -3,6 +3,7 @@ let filterEnabled = true;
 let filterKeywords = [];
 let blurEnabled = true;
 let blurAmount = 10;
+let hideShorts = true; // ショート動画を非表示にする設定
 
 // コンテキスト分析用の定数
 const CONTEXT_PATTERNS = {
@@ -31,12 +32,14 @@ async function loadSettings() {
     enabled: true,
     enableBlur: true,
     blurAmount: 10,
-    keywords: []
+    keywords: [],
+    hideShorts: true
   });
   filterEnabled = settings.enabled;
   blurEnabled = settings.enableBlur;
   blurAmount = settings.blurAmount;
   filterKeywords = settings.keywords;
+  hideShorts = settings.hideShorts;
   processPage();
 }
 
@@ -76,7 +79,18 @@ function calculateFilterStrength(context, keyword) {
 
 // 動画要素をフィルタリング
 function filterVideoElement(element) {
-  if (!filterEnabled || !element) return;
+  if (!element) return;
+
+  // ショート動画かどうかを判定
+  const isShort = element.querySelector('a[href^="/shorts/"]') !== null;
+  
+  // ショート動画は非表示
+  if (hideShorts && isShort) {
+    element.style.display = 'none';
+    return;
+  }
+
+  if (!filterEnabled) return;
 
   const titleElement = element.querySelector('#video-title, .ytd-video-renderer');
   if (!titleElement) return;
@@ -154,9 +168,12 @@ const observer = new MutationObserver((mutations) => {
 // 設定変更のメッセージを受信
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'SETTINGS_CHANGED') {
-    filterEnabled = message.settings.enabled;
-    blurEnabled = message.settings.enableBlur;
-    blurAmount = message.settings.blurAmount;
+    const settings = message.settings;
+    filterEnabled = settings.enabled;
+    filterKeywords = settings.keywords;
+    blurEnabled = settings.enableBlur;
+    blurAmount = settings.blurAmount;
+    hideShorts = settings.hideShorts;
     processPage();
   }
 });

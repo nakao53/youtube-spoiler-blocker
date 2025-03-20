@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', async () => {
   const enableFilter = document.getElementById('enableFilter');
+  const hideShorts = document.getElementById('hideShorts');
   const enableBlur = document.getElementById('enableBlur');
   const blurAmount = document.getElementById('blurAmount');
   const blurValue = document.getElementById('blurValue');
@@ -11,11 +12,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   const loadSettings = async () => {
     const settings = await chrome.storage.sync.get({
       enabled: true,
+      hideShorts: true,
       enableBlur: true,
       blurAmount: 10,
       keywords: []
     });
     enableFilter.checked = settings.enabled;
+    hideShorts.checked = settings.hideShorts;
     enableBlur.checked = settings.enableBlur;
     blurAmount.value = settings.blurAmount;
     blurValue.textContent = `${settings.blurAmount}px`;
@@ -49,6 +52,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     notifyContentScript();
   });
 
+  // ショート動画非表示の切り替え
+  hideShorts.addEventListener('change', async () => {
+    await chrome.storage.sync.set({ hideShorts: hideShorts.checked });
+    notifyContentScript();
+  });
+
   // ぼかし機能の切り替え
   enableBlur.addEventListener('change', async () => {
     await chrome.storage.sync.set({ enableBlur: enableBlur.checked });
@@ -70,11 +79,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (tab.url.includes('youtube.com')) {
       const settings = await chrome.storage.sync.get({
-        enabled: true,
-        enableBlur: true,
-        blurAmount: 10
+        enabled: enableFilter.checked,
+        hideShorts: hideShorts.checked,
+        enableBlur: enableBlur.checked,
+        blurAmount: Number(blurAmount.value),
+        keywords: await getKeywords()
       });
-      chrome.tabs.sendMessage(tab.id, { 
+      chrome.tabs.sendMessage(tab.id, {
         type: 'SETTINGS_CHANGED',
         settings
       });
@@ -102,6 +113,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       addKeywordBtn.click();
     }
   });
+
+  // キーワードリストを取得
+  const getKeywords = async () => {
+    const settings = await chrome.storage.sync.get({ keywords: [] });
+    return settings.keywords;
+  };
 
   // 初期設定を読み込む
   loadSettings();
