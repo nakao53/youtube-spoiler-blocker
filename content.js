@@ -4,6 +4,14 @@ let filterKeywords = [];
 let blurEnabled = true;
 let blurAmount = 10;
 
+// コンテキスト分析用の定数
+const CONTEXT_PATTERNS = {
+  WARNING: /ネタバレ|spoiler|注意|ばれ|結末|バレ/i,
+  REVIEW: /レビュー|感想|review|考察/i,
+  IMPORTANT: /最終回|final|エンディング|決着|結末|完結|終わり/i,
+  EPISODE: /第?\d+話|ep\d+|episode\d+/i
+};
+
 // CSSスタイルを追加
 const style = document.createElement('style');
 document.head.appendChild(style);
@@ -32,33 +40,76 @@ async function loadSettings() {
   processPage();
 }
 
+// コンテキスト分析関数
+function analyzeContext(element) {
+  const title = element.querySelector('#video-title')?.textContent || '';
+  const description = element.querySelector('#description')?.textContent || '';
+  const channelName = element.querySelector('#channel-name')?.textContent || '';
+
+  return {
+    hasWarning: CONTEXT_PATTERNS.WARNING.test(title),
+    isReview: CONTEXT_PATTERNS.REVIEW.test(title),
+    isImportant: CONTEXT_PATTERNS.IMPORTANT.test(title),
+    hasEpisodeNumber: CONTEXT_PATTERNS.EPISODE.test(title),
+    channelName: channelName
+  };
+}
+
+// フィルター強度の計算
+function calculateFilterStrength(context, keyword) {
+  let strength = 0;
+
+  // 警告表現があれば強度を上げる
+  if (context.hasWarning) strength += 2;
+  
+  // レビューや感想の場合
+  if (context.isReview) strength += 1;
+  
+  // 最終回や重要な回の場合
+  if (context.isImportant) strength += 2;
+  
+  // エピソード番号がある場合
+  if (context.hasEpisodeNumber) strength += 1;
+
+  return Math.min(strength, 4); // 最大強度は4
+}
+
 // 動画要素をフィルタリング
 function filterVideoElement(element) {
   if (!filterEnabled || !element) return;
 
-  // タイトル要素を取得（複数のパターンに対応）
   const titleElement = element.querySelector('#video-title, .ytd-video-renderer');
   if (!titleElement) return;
 
-  const title = titleElement.textContent.toLowerCase();
-  const hasBlockedKeyword = filterKeywords.some(keyword => 
-    title.includes(keyword.toLowerCase())
+  const title = titleElement.textContent;
+  const context = analyzeContext(element);
+  
+  // キーワードマッチングとコンテキスト分析
+  const matchedKeyword = filterKeywords.find(keyword => 
+    title.toLowerCase().includes(keyword.toLowerCase())
   );
 
-  if (hasBlockedKeyword) {
-    if (blurEnabled) {
-      // サムネイル画像要素を取得
-      const thumbnail = element.querySelector('#thumbnail img, .ytd-thumbnail img');
-      if (thumbnail) {
-        element.style.setProperty('--blur-amount', `${blurAmount}px`);
-        thumbnail.classList.add('spoiler-blur');
+  if (matchedKeyword) {
+    const filterStrength = calculateFilterStrength(context, matchedKeyword);
+    
+    if (filterStrength > 0) {
+      if (blurEnabled) {
+        // フィルター強度に応じてぼかしを調整
+        const adjustedBlurAmount = Math.floor(blurAmount * (filterStrength / 4));
+        element.style.setProperty('--blur-amount', `${adjustedBlurAmount}px`);
+        element.classList.add('spoiler-blur');
+        
+        // ツールチップで理由を表示
+        const reasons = [];
+        if (context.hasWarning) reasons.push('ネタバレの可能性');
+        if (context.isReview) reasons.push('レビュー/感想');
+        if (context.isImportant) reasons.push('重要な回');
+        if (context.hasEpisodeNumber) reasons.push('エピソード情報');
+        
+        element.title = `フィルター理由: ${reasons.join(', ')}`;
+      } else {
+        element.style.display = 'none';
       }
-      // タイトルもぼかす
-      titleElement.style.setProperty('--blur-amount', `${blurAmount}px`);
-      titleElement.classList.add('spoiler-blur');
-    } else {
-      // ぼかしが無効の場合は非表示
-      element.style.display = 'none';
     }
   } else {
     // ブロック対象でない場合、スタイルをリセット
