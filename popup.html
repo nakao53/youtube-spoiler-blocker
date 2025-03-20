@@ -79,6 +79,27 @@
       </label>
     </div>
 
+    <div class="setting-group">
+      <label>
+        <input type="checkbox" id="enableAI" checked>
+        AIフィルタリングを使用
+      </label>
+      <div class="description">
+        Hugging Face APIを使用して高度なネタバレ検出を行います（月間30,000リクエスト無料）
+      </div>
+    </div>
+
+    <div class="setting-group">
+      <label>
+        <input type="text" id="huggingFaceToken" placeholder="Hugging Face APIトークン">
+      </label>
+      <div class="description">
+        <a href="https://huggingface.co/settings/tokens" target="_blank">
+          トークンの取得方法
+        </a>
+      </div>
+    </div>
+
     <div class="filter-options">
       <div class="blur-control">
         <label for="blurAmount">ぼかしの強さ:</label>

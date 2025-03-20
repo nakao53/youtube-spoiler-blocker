@@ -2,6 +2,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   const enableFilter = document.getElementById('enableFilter');
   const hideShorts = document.getElementById('hideShorts');
   const enableBlur = document.getElementById('enableBlur');
+  const enableAI = document.getElementById('enableAI');
+  const huggingFaceToken = document.getElementById('huggingFaceToken');
   const blurAmount = document.getElementById('blurAmount');
   const blurValue = document.getElementById('blurValue');
   const keywordInput = document.getElementById('keywordInput');
@@ -14,12 +16,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       enabled: true,
       hideShorts: true,
       enableBlur: true,
+      enableAI: true,
+      huggingFaceToken: '',
       blurAmount: 10,
       keywords: []
     });
     enableFilter.checked = settings.enabled;
     hideShorts.checked = settings.hideShorts;
     enableBlur.checked = settings.enableBlur;
+    enableAI.checked = settings.enableAI;
+    huggingFaceToken.value = settings.huggingFaceToken;
     blurAmount.value = settings.blurAmount;
     blurValue.textContent = `${settings.blurAmount}px`;
     renderKeywordList(settings.keywords);
@@ -64,6 +70,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     notifyContentScript();
   });
 
+  // AIフィルタリングの設定変更
+  enableAI.addEventListener('change', async () => {
+    await chrome.storage.sync.set({ enableAI: enableAI.checked });
+    notifyContentScript();
+  });
+
+  // Hugging Face APIトークンの保存
+  huggingFaceToken.addEventListener('change', async () => {
+    await chrome.storage.sync.set({ huggingFaceToken: huggingFaceToken.value });
+    notifyContentScript();
+  });
+
   // ぼかしの強さ変更
   blurAmount.addEventListener('input', () => {
     blurValue.textContent = `${blurAmount.value}px`;
@@ -76,19 +94,34 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // content scriptに設定変更を通知
   const notifyContentScript = async () => {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (tab.url.includes('youtube.com')) {
-      const settings = await chrome.storage.sync.get({
-        enabled: enableFilter.checked,
-        hideShorts: hideShorts.checked,
-        enableBlur: enableBlur.checked,
-        blurAmount: Number(blurAmount.value),
-        keywords: await getKeywords()
-      });
-      chrome.tabs.sendMessage(tab.id, {
-        type: 'SETTINGS_CHANGED',
-        settings
-      });
+    try {
+      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+      const currentTab = tabs[0];
+      
+      // YouTubeのタブが存在し、かつURLがYouTubeである場合のみ通知
+      if (currentTab && currentTab.url && currentTab.url.includes('youtube.com')) {
+        const settings = await chrome.storage.sync.get({
+          enabled: enableFilter.checked,
+          hideShorts: hideShorts.checked,
+          enableBlur: enableBlur.checked,
+          enableAI: enableAI.checked,
+          huggingFaceToken: huggingFaceToken.value,
+          blurAmount: Number(blurAmount.value),
+          keywords: await getKeywords()
+        });
+
+        try {
+          await chrome.tabs.sendMessage(currentTab.id, {
+            type: 'SETTINGS_CHANGED',
+            settings
+          });
+        } catch (error) {
+          console.log('Content scriptとの通信エラー:', error);
+          // エラーを無視して続行（タブがリロードされた直後などは正常）
+        }
+      }
+    } catch (error) {
+      console.log('タブの取得エラー:', error);
     }
   };
 
